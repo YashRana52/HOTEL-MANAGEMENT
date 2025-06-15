@@ -21,7 +21,7 @@ app.use(clerkMiddleware())
 
 //api to listen clearn webhooks
 
-app.use("/api/cleark", clearkWebHooks)
+app.use("/api/clerk", clearkWebHooks)
 
 // @ts-ignore
 app.get('/', (req, res) => {
