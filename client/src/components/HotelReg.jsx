@@ -1,7 +1,9 @@
 import { assets, cities } from '@/assets/assets';
+import { useAppContext } from '@/context/AppContext';
 import React from 'react';
 
 function HotelReg() {
+    const { setShowHotelReg } = useAppContext()
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
             <form className="flex bg-white rounded-xl overflow-hidden shadow-lg w-full max-w-4xl max-md:mx-4">
@@ -19,6 +21,7 @@ function HotelReg() {
                         className="absolute top-4 right-4 h-5 w-5 cursor-pointer"
                         src={assets.closeIcon}
                         alt="Close"
+                        onClick={() => setShowHotelReg(false)}
                     />
 
                     <p className="text-2xl font-semibold text-gray-800 mt-6 mb-2">Register Your Hotel</p>

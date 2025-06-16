@@ -3,8 +3,16 @@ import { Webhook } from "svix";
 
 const clerkWebHooks = async (req, res) => {
     try {
-        // @ts-ignore
-        const whook = new Webhook(process.env.CLERK_WEBHOOKS_SECRET);
+        const webhookSecret = process.env.CLERK_WEBHOOKS_SECRET;
+
+        if (!webhookSecret) {
+            return res.status(500).json({
+                success: false,
+                message: "CLERK_WEBHOOKS_SECRET is not set in .env",
+            });
+        }
+
+        const wh = new Webhook(webhookSecret);
 
         const headers = {
             "svix-id": req.headers["svix-id"],
@@ -12,40 +20,45 @@ const clerkWebHooks = async (req, res) => {
             "svix-signature": req.headers["svix-signature"],
         };
 
-        const payload = await whook.verify(JSON.stringify(req.body), headers);
+        // ✅ req.body is a Buffer (because of express.raw)
+        const payload = wh.verify(req.body, headers);
 
-        // @ts-ignore
         const { data, type } = payload;
 
         const userData = {
-            _id: data.id,
+            clerkId: data.id,
             email: data.email_addresses[0].email_address,
-            username: `${data.first_name} ${data.last_name}`,
+            username: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
             image: data.image_url,
-            recentSearchedCities: []
+            recentSearchedCities: [],
         };
 
         switch (type) {
             case "user.created":
                 await User.create(userData);
                 break;
+
             case "user.updated":
-                await User.findByIdAndUpdate(data.id, userData);
+                await User.findOneAndUpdate({ clerkId: data.id }, userData);
                 break;
+
             case "user.deleted":
-                await User.findByIdAndDelete(data.id);
+                await User.findOneAndDelete({ clerkId: data.id });
                 break;
+
             default:
                 break;
         }
 
-        res.json({ success: true, message: "Webhook received and processed" });
-
+        return res.status(200).json({
+            success: true,
+            message: "Webhook received and processed",
+        });
     } catch (error) {
         console.error("Webhook Error:", error.message);
-        res.status(400).json({
+        return res.status(400).json({
             success: false,
-            message: error.message
+            message: "Webhook verification failed: " + error.message,
         });
     }
 };
